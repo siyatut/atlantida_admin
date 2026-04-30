@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Comfort Step Pet Bowl Set</title>
+  <desc id="desc">A neutral product card with a raised bowl set illustration.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f6f1ea"/>
+      <stop offset="100%" stop-color="#e6d8c8"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  <rect x="285" y="110" width="630" height="580" rx="48" fill="#7a5c43"/>
+  <rect x="345" y="180" width="510" height="390" rx="28" fill="#fbf8f4"/>
+  <rect x="430" y="400" width="340" height="80" rx="20" fill="#9d7757"/>
+  <rect x="470" y="330" width="22" height="140" rx="11" fill="#9d7757"/>
+  <rect x="708" y="330" width="22" height="140" rx="11" fill="#9d7757"/>
+  <circle cx="510" cy="320" r="76" fill="#dfe6ec"/>
+  <circle cx="690" cy="320" r="76" fill="#dfe6ec"/>
+  <circle cx="510" cy="320" r="54" fill="#9fc5d1"/>
+  <circle cx="690" cy="320" r="54" fill="#b7d6a4"/>
+  <text x="600" y="640" text-anchor="middle" font-family="Arial, sans-serif" font-size="48" fill="#fbf8f4">BOWL SET</text>
+</svg>

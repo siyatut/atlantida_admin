@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Feather Chase Cat Wand</title>
+  <desc id="desc">A cool blue product card with a cat teaser wand illustration.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#eef7ff"/>
+      <stop offset="100%" stop-color="#cfe5ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  <rect x="290" y="110" width="620" height="580" rx="48" fill="#3d6cb9"/>
+  <rect x="350" y="180" width="500" height="390" rx="28" fill="#f9fbff"/>
+  <path d="M430 470c180-150 270-200 360-270" fill="none" stroke="#254b87" stroke-width="18" stroke-linecap="round"/>
+  <path d="M790 200c58-26 94 42 34 84-43 30-92 6-94-38-1-19 10-37 28-46 12 22 24 37 32 44" fill="#ff9f68"/>
+  <path d="M828 172c38-18 62 24 24 56-26 21-61 7-64-22-1-14 7-28 20-34 8 15 16 25 20 30" fill="#ffd166"/>
+  <circle cx="520" cy="320" r="92" fill="#7aa6dc"/>
+  <circle cx="486" cy="300" r="13" fill="#263238"/>
+  <circle cx="554" cy="300" r="13" fill="#263238"/>
+  <path d="M492 360c20 18 54 18 74 0" fill="none" stroke="#263238" stroke-width="12" stroke-linecap="round"/>
+  <text x="600" y="640" text-anchor="middle" font-family="Arial, sans-serif" font-size="50" fill="#f9fbff">FEATHER CHASE</text>
+</svg>
