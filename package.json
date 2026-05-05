@@ -6,10 +6,12 @@
   "scripts": {
     "build": "strapi build",
     "console": "strapi console",
+    "debug:woo:categories": "node scripts/debug-woo-categories.js",
     "deploy": "strapi deploy",
     "dev": "strapi develop",
     "develop": "strapi develop",
     "migrate:woo:categories": "node ./scripts/migrate-woo-categories.js",
+    "migrate:woo:products": "node ./scripts/migrate-woo-products.js",
     "routes:list": "strapi routes:list",
     "start": "strapi start",
     "strapi": "strapi",
