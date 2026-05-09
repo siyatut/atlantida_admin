@@ -9,6 +9,8 @@ const PUBLIC_READ_ACTIONS = [
   'api::product.product.findOne',
   'plugin::upload.content-api.find',
   'plugin::upload.content-api.findOne',
+  'api::review.review.find',
+  'api::review.review.create',
 ] as const;
 
 const enablePermission = (
