@@ -28,8 +28,7 @@
       "type": "decimal"
     },
     "description": {
-      "type": "richtext",
-      "required": true
+      "type": "richtext"
     },
     "shortDescription": {
       "type": "text"
