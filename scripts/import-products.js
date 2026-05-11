@@ -81,6 +81,20 @@ async function findMainCategoryDocumentId(title) {
 }
 
 async function findSubcategoryDocumentId(title, parentTitle) {
+  // When parent === title the subcategory has no children — look it up directly.
+  if (title.toLowerCase() === parentTitle.toLowerCase()) {
+    const url = new URL(`${getStrapiBaseUrl()}/api/subcategories`);
+    url.searchParams.set('filters[title][$eqi]', title);
+    url.searchParams.set('fields[0]', 'title');
+    url.searchParams.set('pagination[limit]', '2');
+    const res = await fetchWithRetry(url.toString(), { headers: getHeaders() });
+    if (!res.ok) throw new Error(`GET /api/subcategories failed: HTTP ${res.status}`);
+    const json = await res.json();
+    const match = json.data?.[0];
+    if (!match) throw new Error(`Subcategory not found: "${title}". Run "npm run list:categories" to check names.`);
+    return match.documentId;
+  }
+
   const url = new URL(`${getStrapiBaseUrl()}/api/subcategories`);
   url.searchParams.set('filters[parent][title][$eqi]', parentTitle);
   url.searchParams.set('fields[0]', 'title');

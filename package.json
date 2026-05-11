@@ -14,6 +14,7 @@
     "migrate:woo:products": "node ./scripts/migrate-woo-products.js",
     "import:products": "node --env-file=.env ./scripts/import-products.js",
     "list:categories": "node --env-file=.env ./scripts/list-categories.js",
+    "gen:descriptions": "node --env-file=.env ./scripts/generate-aquarium-descriptions.js",
     "routes:list": "strapi routes:list",
     "start": "strapi start",
     "strapi": "strapi",
