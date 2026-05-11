@@ -6,19 +6,23 @@
 //
 // File format (UTF-8):
 //   Line 1: main category title         (e.g. "Рыбки")
-//   Line 2: parent subcategory title    (e.g. "Корма для рыбок")
-//   Line 3: target subcategory title    (e.g. "Сухие корма")
+//   Line 2: parent subcategory title    (e.g. "Корм для рыбок")
+//   Line 3: target subcategory title    (e.g. "Сухие корма на развес")
 //   Lines 4+: one product per line in format "Title — Price"
 //
 // Usage:
-//   STRAPI_API_TOKEN=<token> node scripts/import-products.js products.txt
+//   node --env-file=.env scripts/import-products.js products.txt
 //
 // Optional env:
 //   STRAPI_BASE_URL  (default: http://localhost:1337)
 //
 // The API token must have write access to the Product content-type.
+// Run "npm run list:categories" to see exact category names.
 
 const fs = require('fs/promises');
+
+const RETRY_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 1500;
 
 function getStrapiBaseUrl() {
   const url = process.env.STRAPI_BASE_URL?.trim() || 'http://localhost:1337';
@@ -36,39 +40,85 @@ function getHeaders() {
   };
 }
 
+async function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchWithRetry(url, options) {
+  let lastError;
+  for (let attempt = 1; attempt <= RETRY_ATTEMPTS; attempt++) {
+    try {
+      return await fetch(url, options);
+    } catch (err) {
+      lastError = err;
+      if (attempt < RETRY_ATTEMPTS) {
+        console.warn(`  [retry ${attempt}/${RETRY_ATTEMPTS - 1}] Connection error, retrying in ${RETRY_DELAY_MS / 1000}s...`);
+        await sleep(RETRY_DELAY_MS);
+      }
+    }
+  }
+  throw lastError;
+}
+
 async function findMainCategoryDocumentId(title) {
   const url = new URL(`${getStrapiBaseUrl()}/api/main-categories`);
-  url.searchParams.set('filters[title][$eqi]', title);
   url.searchParams.set('fields[0]', 'title');
-  url.searchParams.set('pagination[limit]', '1');
+  url.searchParams.set('pagination[limit]', '100');
 
-  const res = await fetch(url.toString(), { headers: getHeaders() });
+  const res = await fetchWithRetry(url.toString(), { headers: getHeaders() });
   if (!res.ok) throw new Error(`GET /api/main-categories failed: HTTP ${res.status}`);
 
   const json = await res.json();
-  const record = json.data?.[0];
-  if (!record) throw new Error(`Main category not found: "${title}"`);
-  return record.documentId;
+  const all = json.data ?? [];
+  const match = all.find((r) => r.title.toLowerCase() === title.toLowerCase());
+
+  if (!match) {
+    const names = all.map((r) => `  • ${r.title}`).join('\n');
+    throw new Error(`Main category not found: "${title}"\nAvailable:\n${names}`);
+  }
+
+  return match.documentId;
 }
 
 async function findSubcategoryDocumentId(title, parentTitle) {
   const url = new URL(`${getStrapiBaseUrl()}/api/subcategories`);
-  url.searchParams.set('filters[title][$eqi]', title);
   url.searchParams.set('filters[parent][title][$eqi]', parentTitle);
   url.searchParams.set('fields[0]', 'title');
-  url.searchParams.set('pagination[limit]', '1');
+  url.searchParams.set('pagination[limit]', '100');
 
-  const res = await fetch(url.toString(), { headers: getHeaders() });
+  const res = await fetchWithRetry(url.toString(), { headers: getHeaders() });
   if (!res.ok) throw new Error(`GET /api/subcategories failed: HTTP ${res.status}`);
 
   const json = await res.json();
-  const record = json.data?.[0];
-  if (!record) throw new Error(`Subcategory "${title}" with parent "${parentTitle}" not found`);
-  return record.documentId;
+  const siblings = json.data ?? [];
+  const match = siblings.find((r) => r.title.toLowerCase() === title.toLowerCase());
+
+  if (!match) {
+    if (siblings.length === 0) {
+      throw new Error(`Parent subcategory not found: "${parentTitle}". Run "npm run list:categories" to check names.`);
+    }
+    const names = siblings.map((r) => `  • ${r.title}`).join('\n');
+    throw new Error(`Subcategory not found: "${title}"\nSubcategories under "${parentTitle}":\n${names}`);
+  }
+
+  return match.documentId;
+}
+
+async function productExists(title, subcategoryDocumentId) {
+  const url = new URL(`${getStrapiBaseUrl()}/api/products`);
+  url.searchParams.set('filters[title][$eqi]', title);
+  url.searchParams.set('filters[subcategories][documentId][$eq]', subcategoryDocumentId);
+  url.searchParams.set('fields[0]', 'title');
+  url.searchParams.set('pagination[limit]', '1');
+
+  const res = await fetchWithRetry(url.toString(), { headers: getHeaders() });
+  if (!res.ok) return false;
+  const json = await res.json();
+  return (json.data?.length ?? 0) > 0;
 }
 
 async function createProduct({ title, price, mainCategoryDocumentId, subcategoryDocumentId }) {
-  const res = await fetch(`${getStrapiBaseUrl()}/api/products`, {
+  const res = await fetchWithRetry(`${getStrapiBaseUrl()}/api/products`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({
@@ -155,7 +205,7 @@ async function run() {
   console.log(`subcategory   documentId: ${subcategoryDocumentId}`);
   console.log('');
 
-  const summary = { created: 0, failed: 0, skipped: 0 };
+  const summary = { created: 0, exists: 0, failed: 0, skipped: 0 };
 
   for (const line of productLines) {
     const parsed = parseProductLine(line);
@@ -166,6 +216,13 @@ async function run() {
     }
 
     try {
+      const alreadyExists = await productExists(parsed.title, subcategoryDocumentId);
+      if (alreadyExists) {
+        console.log(`[exists]   ${parsed.title}`);
+        summary.exists++;
+        continue;
+      }
+
       await createProduct({ ...parsed, mainCategoryDocumentId, subcategoryDocumentId });
       console.log(`[created]  ${parsed.title} — ${parsed.price} ₽`);
       summary.created++;
@@ -176,7 +233,7 @@ async function run() {
   }
 
   console.log('');
-  console.log(`Done.  Created: ${summary.created}  Failed: ${summary.failed}  Skipped: ${summary.skipped}`);
+  console.log(`Done.  Created: ${summary.created}  Exists: ${summary.exists}  Failed: ${summary.failed}  Skipped: ${summary.skipped}`);
 }
 
 run().catch((err) => {

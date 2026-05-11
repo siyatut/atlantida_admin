@@ -13,6 +13,7 @@
     "migrate:woo:categories": "node ./scripts/migrate-woo-categories.js",
     "migrate:woo:products": "node ./scripts/migrate-woo-products.js",
     "import:products": "node --env-file=.env ./scripts/import-products.js",
+    "list:categories": "node --env-file=.env ./scripts/list-categories.js",
     "routes:list": "strapi routes:list",
     "start": "strapi start",
     "strapi": "strapi",
