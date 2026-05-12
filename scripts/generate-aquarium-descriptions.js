@@ -7,13 +7,19 @@
 // Usage:
 //   node --env-file=.env ./scripts/generate-aquarium-descriptions.js <input-file> [--dry-run]
 //
-// Input file: one product per line, 6 fields separated by " | "
+// Input file: one product per line.
+//
+// Full format (6 fields separated by " | ") for parametric types:
 //   Название товара | ДxШxВ | толщина_стекла | толщина_дна | крышка | доп_вариант
 //
 // крышка:      1E14 | 2E14 | без | 1E14+поддон | 2E14+поддон
 // доп_вариант: белая:ЦЕНА | LED:ЦЕНА | 2LED60:ЦЕНА | 2LED:ЦЕНА | поддон:ЦЕНА | -
 //
-// Example:
+// Simple format (title only, no "|") for decorative types without specs:
+//   Аквариум круглый 5 литров
+//   Аквариум ваза 3 литра
+//
+// Example (full):
 //   Аквариум куб 10 литров | 220x220x220 | 4 | - | 1E14 | белая:2200
 
 const fs = require('fs');
@@ -59,12 +65,19 @@ function detectType(title) {
   if (t.includes('сектор')) return 'сектор';
   if (t.includes('восьмигранник')) return 'восьмигранник';
   if (t.includes('черепашник')) return 'черепашник';
+  if (t.includes('круглый')) return 'круглый';
+  if (t.includes('ваза')) return 'ваза';
   return null;
 }
 
 function extractVolume(title) {
   const match = title.match(/(\d+)\s*литр/i);
   return match ? parseInt(match[1], 10) : null;
+}
+
+function extractVolumeStr(title) {
+  const match = title.match(/(\d+(?:[.,]\d+)?)\s*литр/i);
+  return match ? match[1] : null;
 }
 
 function parseDimensions(dimStr) {
@@ -110,6 +123,34 @@ function generateExtraText(extra) {
   };
   if (!map[kind]) throw new Error(`Unknown extra variant: "${kind}". Valid: белая, LED, 2LED60, 2LED, поддон`);
   return ' ' + map[kind];
+}
+
+function generateSimpleDescription(title) {
+  const type = detectType(title);
+  if (!type) throw new Error(`Cannot detect aquarium type from: "${title}"`);
+
+  const volumeStr = extractVolumeStr(title);
+  if (!volumeStr) throw new Error(`Cannot extract volume from: "${title}"`);
+
+  const disclaimer =
+    'Изображение носит ознакомительный характер. Внешний вид товара может отличаться. Уточните детали в магазине.';
+
+  let p1;
+  if (type === 'круглый') {
+    p1 =
+      `Аквариум круглый ${volumeStr} л — декоративная стеклянная модель сферической формы. ` +
+      `Подходит для содержания небольших рыб, улиток и живых растений. ` +
+      `Плавные округлые линии делают аквариум оригинальным акцентом интерьера.`;
+  } else if (type === 'ваза') {
+    p1 =
+      `Аквариум ваза ${volumeStr} л — декоративная стеклянная модель в форме вазы на ножке. ` +
+      `Подходит для содержания небольших рыб, улиток и живых растений. ` +
+      `Необычная форма делает аквариум элегантным украшением интерьера.`;
+  } else {
+    throw new Error(`Type "${type}" requires full parameters (dimensions, glass, lid).`);
+  }
+
+  return `<p>${p1}</p>\n<p>${disclaimer}</p>`;
 }
 
 function generateDescription({ title, dims, glassThickness, bottomThickness, lidType, extra }) {
@@ -227,6 +268,9 @@ function generateDescription({ title, dims, glassThickness, bottomThickness, lid
 }
 
 function parseLine(line, lineNum) {
+  if (!line.includes('|')) {
+    return { title: line.trim(), simple: true };
+  }
   const parts = line.split('|').map((s) => s.trim());
   if (parts.length < 6) {
     throw new Error(`Line ${lineNum}: expected 6 fields, got ${parts.length}`);
@@ -303,7 +347,9 @@ async function run() {
 
     let description;
     try {
-      description = generateDescription(parsed);
+      description = parsed.simple
+        ? generateSimpleDescription(parsed.title)
+        : generateDescription(parsed);
     } catch (err) {
       console.log(`[gen error]    ${parsed.title}`);
       console.log(`               ${err.message}`);
