@@ -174,12 +174,26 @@ function generateSlug(title) {
     .replace(/^-+|-+$/g, '');
 }
 
+function normalizeVolumeForm(title) {
+  return title.replace(/(\d+(?:[.,]\d+)?)\s*литр(?:а|ов)?(?=\s|$)/gi, (_, num) => {
+    const isDecimal = num.includes(',') || num.includes('.');
+    if (isDecimal) return `${num} литра`;
+    const n = parseInt(num, 10);
+    const lastTwo = n % 100;
+    const last = n % 10;
+    if (lastTwo >= 11 && lastTwo <= 19) return `${num} литров`;
+    if (last === 1) return `${num} литр`;
+    if (last >= 2 && last <= 4) return `${num} литра`;
+    return `${num} литров`;
+  });
+}
+
 // Accepts em-dash (—), en-dash (–), and plain hyphen surrounded by spaces.
 function parseProductLine(line) {
   const separatorMatch = line.match(/^(.+?)\s*(?:—|–|\s-\s)\s*(\d+(?:[.,]\d+)?)\s*$/u);
   if (!separatorMatch) return null;
 
-  const title = separatorMatch[1].trim();
+  const title = normalizeVolumeForm(separatorMatch[1].trim());
   const price = parseFloat(separatorMatch[2].replace(',', '.'));
   if (!title || !Number.isFinite(price) || price <= 0) return null;
 
