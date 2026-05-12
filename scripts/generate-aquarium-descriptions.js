@@ -10,7 +10,7 @@
 // Input file: one product per line, 6 fields separated by " | "
 //   Название товара | ДxШxВ | толщина_стекла | толщина_дна | крышка | доп_вариант
 //
-// крышка:      1E14 | 2E14 | без | 1E14+поддон
+// крышка:      1E14 | 2E14 | без | 1E14+поддон | 2E14+поддон
 // доп_вариант: белая:ЦЕНА | LED:ЦЕНА | 2LED60:ЦЕНА | 2LED:ЦЕНА | поддон:ЦЕНА | -
 //
 // Example:
@@ -85,8 +85,9 @@ function generateLidText(lidType) {
     '2E14': 'крышка с патронами Е14',
     'без': 'крышка без освещения',
     '1E14+поддон': 'крышка с патроном Е14 и поддон',
+    '2E14+поддон': 'крышка с патронами Е14 и поддон',
   };
-  if (!map[lidType]) throw new Error(`Unknown lid type: "${lidType}". Valid: 1E14, 2E14, без, 1E14+поддон`);
+  if (!map[lidType]) throw new Error(`Unknown lid type: "${lidType}". Valid: 1E14, 2E14, без, 1E14+поддон, 2E14+поддон`);
   return map[lidType];
 }
 
