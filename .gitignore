@@ -128,4 +128,6 @@ exports
 dist
 build
 .strapi-updater.json
-.strapi-cloud.jsonscripts/import-batch.txt
+.strapi-cloud.json
+scripts/import-batch.txt
+images/
