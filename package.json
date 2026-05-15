@@ -16,6 +16,7 @@
     "list:categories": "node --env-file=.env ./scripts/list-categories.js",
     "gen:descriptions": "node --env-file=.env ./scripts/generate-aquarium-descriptions.js",
     "assign:image": "node --env-file=.env ./scripts/assign-product-image.js",
+    "assign:food:images": "node --env-file=.env ./scripts/assign-food-images.js",
     "routes:list": "strapi routes:list",
     "start": "strapi start",
     "strapi": "strapi",
