@@ -6,10 +6,13 @@
 // then assigns each image to the matching product by filename (without extension).
 //
 // Usage:
-//   node --env-file=.env scripts/upload-and-assign-images.js <local-dir> "<strapi-folder-name>" [--dry-run]
+//   node --env-file=.env scripts/upload-and-assign-images.js <local-dir> "<strapi-folder-name>" [--only "File1.jpg,File2.png"] [--dry-run]
+//
+// --only: comma-separated list of filenames to process (skips all others)
 //
 // Example:
 //   node --env-file=.env scripts/upload-and-assign-images.js ./images/"Аквариумные рыбки" "Аквариумные рыбки"
+//   node --env-file=.env scripts/upload-and-assign-images.js ./images/"Аквариумные рыбки" "Аквариумные рыбки" --only "Телескоп ситцевый.jpg,Телескоп чёрный.jpg"
 
 const fs = require('fs');
 const path = require('path');
@@ -18,11 +21,15 @@ const LOCAL_DIR = process.argv[2];
 const FOLDER_NAME = process.argv[3];
 
 if (!LOCAL_DIR || !FOLDER_NAME) {
-  console.error('Usage: node scripts/upload-and-assign-images.js <local-dir> "<strapi-folder-name>" [--dry-run]');
+  console.error('Usage: node scripts/upload-and-assign-images.js <local-dir> "<strapi-folder-name>" [--only "file1,file2"] [--dry-run]');
   process.exit(1);
 }
 
 const DRY_RUN = process.argv.includes('--dry-run');
+const onlyArgIdx = process.argv.indexOf('--only');
+const ONLY_FILES = onlyArgIdx !== -1
+  ? new Set(process.argv[onlyArgIdx + 1].split(',').map((f) => f.trim().normalize('NFC')))
+  : null;
 const PAGE_SIZE = 100;
 const RETRY_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 1500;
@@ -182,6 +189,7 @@ async function run() {
   const allFiles = fs.readdirSync(LOCAL_DIR);
   const imageFiles = allFiles
     .filter((f) => SUPPORTED_EXTS.has(path.extname(f).toLowerCase()))
+    .filter((f) => !ONLY_FILES || ONLY_FILES.has(f.normalize('NFC')))
     .map((f) => ({
       filename: f,
       title: path.basename(f, path.extname(f)),
