@@ -144,10 +144,9 @@ async function fetchProductMap() {
   return map;
 }
 
-async function uploadFile(fileBuffer, filename, mimeType, folderId) {
+async function uploadFile(fileBuffer, filename, mimeType) {
   const formData = new FormData();
   formData.append('files', new Blob([fileBuffer], { type: mimeType }), filename);
-  formData.append('fileInfo', JSON.stringify({ folder: folderId }));
 
   const res = await fetchWithRetry(`${getStrapiBaseUrl()}/api/upload`, {
     method: 'POST',
@@ -161,6 +160,18 @@ async function uploadFile(fileBuffer, filename, mimeType, folderId) {
   const json = await res.json();
   const uploaded = Array.isArray(json) ? json[0] : json;
   return uploaded?.id ?? null;
+}
+
+async function moveFilesToFolder(adminJwt, fileIds, destinationFolderId) {
+  const res = await fetchWithRetry(`${getStrapiBaseUrl()}/upload/actions/bulk-move`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminJwt}` },
+    body: JSON.stringify({ fileIds, destinationFolderId }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`bulk-move failed: HTTP ${res.status} — ${text.slice(0, 200)}`);
+  }
 }
 
 async function assignImageToProduct(documentId, imageId) {
@@ -257,6 +268,7 @@ async function run() {
   let uploaded = 0;
   let assigned = 0;
   let failed = 0;
+  const uploadedIds = [];
 
   for (const { file, product } of matched) {
     process.stdout.write(`Uploading "${file.filename}"... `);
@@ -264,7 +276,8 @@ async function run() {
     try {
       const buffer = fs.readFileSync(file.fullPath);
       const mimeType = MIME_TYPES[file.ext] ?? 'application/octet-stream';
-      imageId = await uploadFile(buffer, file.filename, mimeType, folder.id);
+      imageId = await uploadFile(buffer, file.filename, mimeType);
+      uploadedIds.push(imageId);
       uploaded++;
       console.log(`done (id=${imageId})`);
     } catch (err) {
@@ -280,6 +293,17 @@ async function run() {
       console.log('done');
     } catch (err) {
       failed++;
+      console.error(`FAILED: ${err.message}`);
+    }
+  }
+
+  // Move all uploaded files to the target folder in one request.
+  if (uploadedIds.length > 0) {
+    process.stdout.write(`\nMoving ${uploadedIds.length} file(s) to "${FOLDER_NAME}"... `);
+    try {
+      await moveFilesToFolder(adminJwt, uploadedIds, folder.id);
+      console.log('done');
+    } catch (err) {
       console.error(`FAILED: ${err.message}`);
     }
   }
