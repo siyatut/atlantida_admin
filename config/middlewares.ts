@@ -19,17 +19,7 @@ const config: Core.Config.Middlewares = [
   'strapi::session',
   'strapi::favicon',
   'strapi::public',
-  {
-    name: 'strapi::rateLimit',
-    config: {
-      interval: 60000,
-      max: 10,
-      routes: [
-        { method: 'POST', path: '/api/contact' },
-        { method: 'POST', path: '/api/reviews' },
-      ],
-    },
-  },
+  'global::rate-limit',
 ];
 
 export default config;
